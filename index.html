@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tour Place Recommender System – Bangladesh</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green : #006A4E;
+    --red   : #F42A41;
+    --rl    : #7B2FBE;
+    --light : #f0f7f4;
+    --card  : #ffffff;
+    --text  : #1a1a2e;
+    --muted : #6c757d;
+    --border: #dee2e6;
+    --shadow: 0 4px 20px rgba(0,106,78,0.10);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',sans-serif; background:var(--light); color:var(--text); }
+
+  /* HEADER */
+  header {
+    background:linear-gradient(135deg,var(--green) 60%,#004d39);
+    color:#fff; padding:28px 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 4px 16px rgba(0,0,0,0.18);
+  }
+  header .title-block h1 { font-size:1.8rem; font-weight:700; }
+  header .title-block p  { font-size:.9rem; opacity:.85; margin-top:4px; }
+  header .badge {
+    background:var(--red); color:#fff;
+    padding:8px 18px; border-radius:20px;
+    font-size:.85rem; font-weight:600;
+  }
+  .flag-stripe {
+    height:5px;
+    background:linear-gradient(90deg,var(--green) 50%,var(--red) 50%);
+  }
+
+  /* LAYOUT */
+  .container { max-width:1300px; margin:0 auto; padding:30px 20px; }
+  section    { margin-bottom:40px; }
+  h2.section-title {
+    font-size:1.25rem; font-weight:700;
+    color:var(--green); border-left:4px solid var(--red);
+    padding-left:12px; margin-bottom:20px;
+  }
+
+  /* STAT CARDS */
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .stat-card {
+    background:var(--card); border-radius:14px;
+    padding:22px 20px; text-align:center;
+    box-shadow:var(--shadow); border-top:4px solid var(--green);
+  }
+  .stat-card.red { border-top-color:var(--red); }
+  .stat-card.pur { border-top-color:var(--rl);  }
+  .stat-card h3  { font-size:2rem; font-weight:800; color:var(--green); }
+  .stat-card.red h3 { color:var(--red); }
+  .stat-card.pur h3 { color:var(--rl);  }
+  .stat-card p   { font-size:.85rem; color:var(--muted); margin-top:4px; }
+
+  /* CHART GRID */
+  .chart-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .chart-card   {
+    background:var(--card); border-radius:14px;
+    padding:22px; box-shadow:var(--shadow);
+  }
+  .chart-card h3 { font-size:1rem; font-weight:600; color:var(--green); margin-bottom:16px; }
+  .chart-card canvas { max-height:280px; }
+
+  /* RECOMMENDER BOX */
+  .recommender-box {
+    background:var(--card); border-radius:14px;
+    padding:28px; box-shadow:var(--shadow);
+  }
+  .user-select-row {
+    display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+    margin-bottom:24px;
+  }
+  .user-select-row label  { font-weight:600; color:var(--green); }
+  .user-select-row select {
+    padding:10px 18px; border-radius:8px;
+    border:2px solid var(--green); font-size:.95rem; min-width:200px;
+  }
+  .user-select-row button {
+    padding:10px 22px; border-radius:8px;
+    background:var(--green); color:#fff;
+    border:none; font-weight:600; font-size:.95rem;
+    cursor:pointer; transition:background .2s;
+  }
+  .user-select-row button:hover { background:#004d39; }
+
+  /* PROFILE */
+  .profile-card {
+    background:linear-gradient(135deg,#e8f5f0,#f8f9fa);
+    border-radius:12px; padding:18px 22px;
+    display:flex; flex-wrap:wrap; gap:16px;
+    margin-bottom:24px; border-left:4px solid var(--green);
+  }
+  .profile-item { display:flex; flex-direction:column; min-width:110px; }
+  .profile-item span:first-child { font-size:.75rem; color:var(--muted); text-transform:uppercase; }
+  .profile-item span:last-child  { font-weight:700; color:var(--text); margin-top:2px; }
+
+  /* TABS */
+  .tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid var(--border); }
+  .tab-btn {
+    padding:10px 24px; border:none; background:none;
+    font-size:.92rem; font-weight:600; cursor:pointer;
+    color:var(--muted); border-bottom:3px solid transparent;
+    margin-bottom:-2px; transition:all .2s;
+  }
+  .tab-btn.active-cf { color:var(--green); border-bottom-color:var(--green); }
+  .tab-btn.active-cb { color:var(--red);   border-bottom-color:var(--red);   }
+  .tab-btn.active-rl { color:var(--rl);    border-bottom-color:var(--rl);    }
+
+  /* DEST CARDS */
+  .dest-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .dest-card {
+    border-radius:12px; padding:16px;
+    background:var(--light); border:1px solid var(--border);
+    transition:transform .2s, box-shadow .2s;
+  }
+  .dest-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); }
+  .dest-name   { font-weight:700; font-size:1rem; margin-bottom:8px; }
+  .badge-row   { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+  .badge       { font-size:.72rem; font-weight:600; padding:3px 9px; border-radius:20px; }
+  .badge-type  { background:#d4edda; color:#155724; }
+  .badge-div   { background:#cce5ff; color:#004085; }
+  .badge-season{ background:#fff3cd; color:#856404; }
+  .badge-budget{ background:#f8d7da; color:#721c24; }
+  .rating-row  { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .rating-star { color:#f4a11d; font-size:.9rem; }
+  .score-pill  {
+    font-size:.75rem; font-weight:700;
+    padding:3px 10px; border-radius:20px; color:#fff;
+  }
+  .pill-cf { background:var(--green); }
+  .pill-cb { background:var(--red);   }
+  .pill-rl { background:var(--rl);    }
+  .no-data { color:var(--muted); font-size:.9rem; padding:20px 0; text-align:center; }
+
+  /* SIMILAR USERS */
+  .sim-user-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+  .sim-user-card {
+    background:#f8f9fa; border-radius:10px;
+    padding:12px 16px; display:flex;
+    align-items:center; gap:14px;
+    border-left:3px solid var(--green);
+  }
+  .sim-user-card .uid { font-weight:800; color:var(--green); min-width:70px; }
+  .sim-user-info { font-size:.83rem; color:var(--muted); flex:1; }
+  .sim-bar-wrap  { background:#e9ecef; border-radius:4px; height:8px; min-width:80px; }
+  .sim-bar       { height:8px; border-radius:4px; background:var(--green); }
+  .sim-pct       { font-size:.8rem; font-weight:700; color:var(--green); min-width:42px; text-align:right; }
+
+  /* RL TRAINING STATS */
+  .rl-stats-row {
+    display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .rl-stat {
+    background:linear-gradient(135deg,#f3eafe,#ede0ff);
+    border-radius:10px; padding:14px 20px;
+    border-left:4px solid var(--rl); min-width:150px;
+  }
+  .rl-stat span:first-child { font-size:.75rem; color:var(--muted); text-transform:uppercase; display:block; }
+  .rl-stat span:last-child  { font-size:1.3rem; font-weight:800; color:var(--rl); }
+
+  /* COMPARISON CHART */
+  .compare-section { margin-top:28px; }
+  .compare-section h3 {
+    font-size:1rem; font-weight:700;
+    color:var(--text); margin-bottom:14px;
+  }
+
+  /* EXPLORER */
+  .filter-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .filter-row select {
+    padding:8px 14px; border-radius:8px;
+    border:2px solid var(--green); font-size:.9rem; cursor:pointer;
+  }
+  .explorer-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+  .exp-card {
+    background:var(--card); border-radius:14px;
+    padding:18px; box-shadow:var(--shadow);
+    border-top:3px solid var(--green);
+    transition:transform .2s;
+  }
+  .exp-card:hover { transform:translateY(-3px); }
+  .exp-card h4    { font-size:1rem; font-weight:700; margin-bottom:8px; }
+  .exp-card p     { font-size:.8rem; color:var(--muted); margin-top:8px; line-height:1.5; }
+
+  /* FOOTER */
+  footer {
+    background:var(--green); color:#fff;
+    text-align:center; padding:18px;
+    font-size:.85rem; margin-top:40px;
+  }
+
+  /* LOADING */
+  #loading {
+    position:fixed; inset:0; background:rgba(0,106,78,.97);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    color:#fff; z-index:9999;
+  }
+  #loading h2 { font-size:1.6rem; margin-bottom:12px; }
+  #loading p  { opacity:.8; }
+  .spinner {
+    width:50px; height:50px;
+    border:5px solid rgba(255,255,255,.3);
+    border-top-color:#fff; border-radius:50%;
+    animation:spin 1s linear infinite; margin-bottom:20px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  @media(max-width:768px) {
+    .stat-grid  { grid-template-columns:repeat(2,1fr); }
+    .chart-grid { grid-template-columns:1fr; }
+    header      { flex-direction:column; gap:12px; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>🗺️ Loading Dashboard…</h2>
+  <p>Tour Place Recommender System – Bangladesh 🇧🇩</p>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="title-block">
+    <h1>🗺️ Tour Place Recommender System</h1>
+    <p>Collaborative Filtering · Content-Based · Q-Learning (RL) · Bangladesh Destinations</p>
+  </div>
+  <div class="badge">Khalid Mahmud Joy &nbsp;|&nbsp; 2022-3-60-159</div>
+</header>
+<div class="flag-stripe"></div>
+
+<div class="container">
+
+  <!-- SECTION 1: STATS -->
+  <section>
+    <h2 class="section-title">📊 Dataset Overview</h2>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <h3 id="stat-users">–</h3><p>Total Users</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="stat-dests">–</h3><p>Total Destinations</p>
+      </div>
+      <div class="stat-card red">
+        <h3 id="stat-ratings">–</h3><p>Total Ratings</p>
+      </div>
+      <div class="stat-card red">
+        <h3 id="stat-avg">–</h3><p>Average Rating</p>
+      </div>
+      <div class="stat-card pur" style="grid-column:span 2">
+        <h3 id="stat-episodes">–</h3><p>RL Training Episodes</p>
+      </div>
+      <div class="stat-card pur" style="grid-column:span 2">
+        <h3 id="stat-reward">–</h3><p>RL Final Avg Reward</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: CHARTS -->
+  <section>
+    <h2 class="section-title">📈 Data Visualizations</h2>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>🏖️ Destinations by Type</h3>
+        <canvas id="chartType"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>🗺️ Destinations by Division</h3>
+        <canvas id="chartDivision"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>⭐ Ratings Distribution</h3>
+        <canvas id="chartRatings"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>💰 Budget Level Breakdown</h3>
+        <canvas id="chartBudget"></canvas>
+      </div>
+      <div class="chart-card" style="grid-column:span 2">
+        <h3>🪖 Q-Learning Training Progress (Avg Reward per 100 Episodes)</h3>
+        <canvas id="chartRL"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: RECOMMENDER -->
+  <section>
+    <h2 class="section-title">🤖 Recommender Engine</h2>
+    <div class="recommender-box">
+
+      <div class="user-select-row">
+        <label for="userSelect">Select User ID:</label>
+        <select id="userSelect"></select>
+        <button onclick="loadRecommendations()">🔍 Get Recommendations</button>
+      </div>
+
+      <div id="profileSection" style="display:none">
+
+        <!-- Profile -->
+        <div class="profile-card" id="profileCard"></div>
+
+        <!-- Similar Users -->
+        <h3 style="font-size:.95rem;font-weight:700;color:var(--green);margin-bottom:12px;">
+          👥 Top 5 Most Similar Users (Collaborative)
+        </h3>
+        <div class="sim-user-list" id="simUserList"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-btn active-cf" id="btn-cf"
+            onclick="switchTab('cf',this)">👥 Collaborative Filtering</button>
+          <button class="tab-btn" id="btn-cb"
+            onclick="switchTab('cb',this)">🧠 Content-Based</button>
+          <button class="tab-btn" id="btn-rl"
+            onclick="switchTab('rl',this)">🪖 Q-Learning (RL)</button>
+        </div>
+
+        <!-- CF Tab -->
+        <div id="tab-cf">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
+            Recommendations based on ratings from the most similar users.
+          </p>
+          <div class="dest-grid" id="collabResults"></div>
+        </div>
+
+        <!-- CB Tab -->
+        <div id="tab-cb" style="display:none">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
+            Recommendations based on your Travel Style, Preferred Type &amp; Budget Level match.
+          </p>
+          <div class="dest-grid" id="contentResults"></div>
+        </div>
+
+        <!-- RL Tab -->
+        <div id="tab-rl" style="display:none">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
+            Recommendations from the Q-Learning agent trained over
+            <strong id="rl-episodes-inline">1000</strong> episodes.
+            Higher Q-Value = agent is more confident about this destination.
+          </p>
+
+          <!-- RL Training Stats -->
+          <div class="rl-stats-row" id="rlStatsRow"></div>
+
+          <!-- RL Cards -->
+          <div class="dest-grid" id="rlResults"></div>
+
+          <!-- Comparison Chart -->
+          <div class="compare-section">
+            <h3>📊 Score Comparison: CF vs CB vs RL (Top 5 each)</h3>
+            <div class="chart-card" style="margin-top:10px">
+              <canvas id="chartCompare"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: EXPLORER -->
+  <section>
+    <h2 class="section-title">🔍 Destination Explorer</h2>
+    <div class="filter-row">
+      <select id="filterType"     onchange="renderExplorer()"><option value="">All Types</option></select>
+      <select id="filterDivision" onchange="renderExplorer()"><option value="">All Divisions</option></select>
+      <select id="filterSeason"   onchange="renderExplorer()"><option value="">All Seasons</option></select>
+      <select id="filterBudget"   onchange="renderExplorer()"><option value="">All Budgets</option></select>
+    </div>
+    <div class="explorer-grid" id="explorerGrid"></div>
+  </section>
+
+</div>
+
+<footer>
+  Tour Place Recommender System &nbsp;|&nbsp;
+  Khalid Mahmud Joy &nbsp;|&nbsp; ID: 2022-3-60-159 &nbsp;|&nbsp;
+  Bangladesh 🇧🇩
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// GLOBALS
+// ─────────────────────────────────────────────
+let USERS=[], DESTS=[], RATINGS=[], RECS={}, RL_RECS={}, RL_TRAIN={};
+let compareChart = null;
+
+const GREEN = '#006A4E';
+const RED   = '#F42A41';
+const PUR   = '#7B2FBE';
+const MIXED = ['#006A4E','#F42A41','#f4a11d','#1d8cf8','#9c27b0',
+               '#ff9800','#00bcd4','#8bc34a','#e91e63','#607d8b'];
+
+// ─────────────────────────────────────────────
+// LOAD JSON
+// ─────────────────────────────────────────────
+async function loadJSON(file) {
+  const r = await fetch(file);
+  if (!r.ok) throw new Error(`Cannot load ${file}`);
+  return r.json();
+}
+
+async function init() {
+  try {
+    [USERS, DESTS, RATINGS, RECS, RL_RECS, RL_TRAIN] = await Promise.all([
+      loadJSON('users.json'),
+      loadJSON('destinations.json'),
+      loadJSON('ratings.json'),
+      loadJSON('recommendations.json'),
+      loadJSON('rl_recommendations.json'),
+      loadJSON('rl_training.json')
+    ]);
+    buildDashboard();
+    document.getElementById('loading').style.display = 'none';
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `
+      <h2>⚠️ Error Loading Data</h2>
+      <p>Make sure all 6 JSON files are in the same folder as index.html<br>
+      and you are running: <strong>python -m http.server 8000</strong></p>
+      <p style="margin-top:10px;opacity:.7;font-size:.85rem">${e.message}</p>`;
+  }
+}
+
+// ─────────────────────────────────────────────
+// BUILD DASHBOARD
+// ─────────────────────────────────────────────
+function buildDashboard() {
+  renderStats();
+  renderCharts();
+  renderUserDropdown();
+  renderExplorerFilters();
+  renderExplorer();
+}
+
+// ─────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('stat-users').textContent    = USERS.length;
+  document.getElementById('stat-dests').textContent    = DESTS.length;
+  document.getElementById('stat-ratings').textContent  = RATINGS.length;
+  const avg = RATINGS.reduce((s,r)=>s+r.rating,0)/RATINGS.length;
+  document.getElementById('stat-avg').textContent      = avg.toFixed(2);
+  document.getElementById('stat-episodes').textContent = RL_TRAIN.episodes || '–';
+  document.getElementById('stat-reward').textContent   =
+    RL_TRAIN.final_avg_reward !== undefined ? RL_TRAIN.final_avg_reward : '–';
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+function count(arr, key) {
+  return arr.reduce((acc,x)=>{ acc[x[key]]=(acc[x[key]]||0)+1; return acc; },{});
+}
+
+function renderCharts() {
+  // Type
+  const typeC = count(DESTS,'type');
+  new Chart(document.getElementById('chartType'),{
+    type:'bar',
+    data:{ labels:Object.keys(typeC),
+      datasets:[{ label:'Destinations', data:Object.values(typeC),
+        backgroundColor:MIXED, borderRadius:6 }]},
+    options:{ plugins:{legend:{display:false}},
+      scales:{ y:{beginAtZero:true,ticks:{stepSize:1}} } }
+  });
+
+  // Division
+  const divC = count(DESTS,'division');
+  new Chart(document.getElementById('chartDivision'),{
+    type:'doughnut',
+    data:{ labels:Object.keys(divC),
+      datasets:[{ data:Object.values(divC),
+        backgroundColor:MIXED, borderWidth:2 }]},
+    options:{ plugins:{ legend:{ position:'right' } } }
+  });
+
+  // Ratings distribution
+  const rBuckets={};
+  for(let i=1;i<=10;i++) rBuckets[i]=0;
+  RATINGS.forEach(r=>{ if(rBuckets[r.rating]!==undefined) rBuckets[r.rating]++; });
+  new Chart(document.getElementById('chartRatings'),{
+    type:'bar',
+    data:{ labels:Object.keys(rBuckets).map(k=>`Rating ${k}`),
+      datasets:[{ label:'Count', data:Object.values(rBuckets),
+        backgroundColor:Object.keys(rBuckets).map(k=>
+          k>=8?GREEN:k>=5?'#f4a11d':RED), borderRadius:5 }]},
+    options:{ plugins:{legend:{display:false}},
+      scales:{ y:{beginAtZero:true} } }
+  });
+
+  // Budget
+  const budC = count(DESTS,'budget_level');
+  new Chart(document.getElementById('chartBudget'),{
+    type:'polarArea',
+    data:{ labels:Object.keys(budC).map(k=>`Level ${k}`),
+      datasets:[{ data:Object.values(budC),
+        backgroundColor:['#cce5ff','#d4edda','#fff3cd','#f8d7da','#e2d9f3'] }]},
+    options:{ plugins:{ legend:{ position:'right' } } }
+  });
+
+  // RL Training Progress
+  const epLog = RL_TRAIN.episode_log || [];
+  new Chart(document.getElementById('chartRL'),{
+    type:'line',
+    data:{
+      labels: epLog.map(e=>`Ep ${e.episode}`),
+      datasets:[{
+        label:'Avg Reward (per 100 eps)',
+        data: epLog.map(e=>e.avg_reward),
+        borderColor: PUR, backgroundColor:'rgba(123,47,190,0.1)',
+        fill:true, tension:.4, pointRadius:5,
+        pointBackgroundColor: PUR
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:true } },
+      scales:{
+        y:{ title:{ display:true, text:'Avg Reward' } },
+        x:{ title:{ display:true, text:'Episode' } }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// USER DROPDOWN
+// ─────────────────────────────────────────────
+function renderUserDropdown() {
+  const sel = document.getElementById('userSelect');
+  USERS.forEach(u => {
+    const o = document.createElement('option');
+    o.value = u.user_id;
+    o.textContent = `User ${u.user_id} — ${u.division} · ${u.preferred_type} · Budget ${u.budget_level}`;
+    sel.appendChild(o);
+  });
+}
+
+// ─────────────────────────────────────────────
+// LOAD RECOMMENDATIONS
+// ─────────────────────────────────────────────
+function loadRecommendations() {
+  const uid   = document.getElementById('userSelect').value;
+  const uData = USERS.find(u => u.user_id == uid);
+  if (!uData) return;
+
+  // Profile
+  document.getElementById('profileCard').innerHTML = `
+    <div class="profile-item"><span>User ID</span><span>#${uData.user_id}</span></div>
+    <div class="profile-item"><span>Division</span><span>${uData.division}</span></div>
+    <div class="profile-item"><span>Age</span><span>${uData.age}</span></div>
+    <div class="profile-item"><span>Travel Style</span><span>${uData.travel_style}</span></div>
+    <div class="profile-item"><span>Preferred Type</span><span>${uData.preferred_type}</span></div>
+    <div class="profile-item"><span>Budget Level</span><span>${uData.budget_level}</span></div>
+  `;
+
+  const recData = RECS[String(uid)] || {};
+  const rlData  = RL_RECS[String(uid)] || [];
+
+  // Similar Users
+  const simList = document.getElementById('simUserList');
+  simList.innerHTML = '';
+  const simUsers = recData.similar_users || [];
+  if (simUsers.length > 0) {
+    simUsers.forEach(su => {
+      simList.innerHTML += `
+        <div class="sim-user-card">
+          <div class="uid">User ${su.user_id}</div>
+          <div class="sim-user-info">
+            ${su.division} · ${su.travel_style} · ${su.preferred_type} · Budget ${su.budget_level}
+          </div>
+          <div class="sim-bar-wrap">
+            <div class="sim-bar" style="width:${Math.round(su.similarity*100)}%"></div>
+          </div>
+          <div class="sim-pct">${(su.similarity*100).toFixed(1)}%</div>
+        </div>`;
+    });
+  } else {
+    simList.innerHTML = '<p class="no-data">No similar users found.</p>';
+  }
+
+  // CF Results
+  const collabEl = document.getElementById('collabResults');
+  collabEl.innerHTML = '';
+  const cfList = recData.collaborative || [];
+  if (cfList.length > 0) {
+    cfList.forEach(d => { collabEl.innerHTML += destCard(d,'cf'); });
+  } else {
+    collabEl.innerHTML = '<p class="no-data">No collaborative recommendations. Try another user.</p>';
+  }
+
+  // CB Results
+  const contentEl = document.getElementById('contentResults');
+  contentEl.innerHTML = '';
+  const cbList = recData.content_based || [];
+  if (cbList.length > 0) {
+    cbList.forEach(d => { contentEl.innerHTML += destCard(d,'cb'); });
+  } else {
+    contentEl.innerHTML = '<p class="no-data">No content-based recommendations found.</p>';
+  }
+
+  // RL Stats row
+  document.getElementById('rl-episodes-inline').textContent = RL_TRAIN.episodes || 1000;
+  document.getElementById('rlStatsRow').innerHTML = `
+    <div class="rl-stat"><span>Episodes</span><span>${RL_TRAIN.episodes}</span></div>
+    <div class="rl-stat"><span>Final Avg Reward</span><span>${RL_TRAIN.final_avg_reward}</span></div>
+    <div class="rl-stat"><span>Learning Rate</span><span>${RL_TRAIN.learning_rate}</span></div>
+    <div class="rl-stat"><span>Discount Factor</span><span>${RL_TRAIN.discount_factor}</span></div>
+    <div class="rl-stat"><span>Epsilon (Explore)</span><span>${RL_TRAIN.epsilon}</span></div>
+  `;
+
+  // RL Results
+  const rlEl = document.getElementById('rlResults');
+  rlEl.innerHTML = '';
+  if (rlData.length > 0) {
+    rlData.forEach(d => { rlEl.innerHTML += destCard(d,'rl'); });
+  } else {
+    rlEl.innerHTML = '<p class="no-data">No RL recommendations found for this user.</p>';
+  }
+
+  // Comparison Chart (CF vs CB vs RL top 5)
+  renderCompareChart(cfList.slice(0,5), cbList.slice(0,5), rlData.slice(0,5));
+
+  document.getElementById('profileSection').style.display = 'block';
+  switchTab('cf', document.getElementById('btn-cf'));
+  document.getElementById('profileSection').scrollIntoView({ behavior:'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// DEST CARD
+// ─────────────────────────────────────────────
+function destCard(d, mode) {
+  const scoreLabel = mode==='rl' ? 'Q-Val' : mode==='cf' ? 'CF' : 'CB';
+  const pillClass  = mode==='rl' ? 'pill-rl' : mode==='cf' ? 'pill-cf' : 'pill-cb';
+  const scoreVal   = mode==='rl' ? d.q_value : d.score;
+  return `
+    <div class="dest-card">
+      <div class="dest-name">${d.name}</div>
+      <div class="badge-row">
+        <span class="badge badge-type">${d.type}</span>
+        <span class="badge badge-div">${d.division}</span>
+        <span class="badge badge-season">🌤 ${d.best_season}</span>
+        <span class="badge badge-budget">💰 L${d.budget_level}</span>
+      </div>
+      <div class="rating-row">
+        <span class="rating-star">${d.avg_rating} ★</span>
+        <span class="score-pill ${pillClass}">${scoreLabel}: ${scoreVal}</span>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// COMPARISON CHART
+// ─────────────────────────────────────────────
+function renderCompareChart(cfList, cbList, rlList) {
+  if (compareChart) { compareChart.destroy(); compareChart = null; }
+
+  // Use union of top-5 names from all three
+  const allNames = [...new Set([
+    ...cfList.map(d=>d.name),
+    ...cbList.map(d=>d.name),
+    ...rlList.map(d=>d.name)
+  ])];
+
+  const cfScores = allNames.map(n => { const f=cfList.find(d=>d.name===n); return f?f.score:0; });
+  const cbScores = allNames.map(n => { const f=cbList.find(d=>d.name===n); return f?f.score:0; });
+  const rlScores = allNames.map(n => { const f=rlList.find(d=>d.name===n); return f?f.q_value:0; });
+
+  const ctx = document.getElementById('chartCompare');
+  compareChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: allNames,
+      datasets:[
+        { label:'Collaborative (CF)', data:cfScores,
+          backgroundColor:'rgba(0,106,78,0.75)',   borderRadius:5 },
+        { label:'Content-Based (CB)', data:cbScores,
+          backgroundColor:'rgba(244,42,65,0.75)',  borderRadius:5 },
+        { label:'Q-Learning (RL)',    data:rlScores,
+          backgroundColor:'rgba(123,47,190,0.75)', borderRadius:5 }
+      ]
+    },
+    options:{
+      plugins:{ legend:{ position:'top' } },
+      scales:{
+        y:{ beginAtZero:true,
+          title:{ display:true, text:'Score / Q-Value' } },
+        x:{ ticks:{ maxRotation:30 } }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+function switchTab(tab, btn) {
+  document.getElementById('tab-cf').style.display = tab==='cf' ? '' : 'none';
+  document.getElementById('tab-cb').style.display = tab==='cb' ? '' : 'none';
+  document.getElementById('tab-rl').style.display = tab==='rl' ? '' : 'none';
+
+  ['btn-cf','btn-cb','btn-rl'].forEach(id => {
+    const b = document.getElementById(id);
+    b.classList.remove('active-cf','active-cb','active-rl');
+  });
+
+  if (tab==='cf') document.getElementById('btn-cf').classList.add('active-cf');
+  if (tab==='cb') document.getElementById('btn-cb').classList.add('active-cb');
+  if (tab==='rl') document.getElementById('btn-rl').classList.add('active-rl');
+}
+
+// ─────────────────────────────────────────────
+// EXPLORER
+// ─────────────────────────────────────────────
+function renderExplorerFilters() {
+  const types   = [...new Set(DESTS.map(d=>d.type))].sort();
+  const divs    = [...new Set(DESTS.map(d=>d.division))].sort();
+  const seasons = [...new Set(DESTS.map(d=>d.best_season))].sort();
+  const budgets = [...new Set(DESTS.map(d=>d.budget_level))].sort((a,b)=>a-b);
+
+  fillSelect('filterType',    types,   v=>v,         v=>v);
+  fillSelect('filterDivision',divs,    v=>v,         v=>v);
+  fillSelect('filterSeason',  seasons, v=>v,         v=>v);
+  fillSelect('filterBudget',  budgets, v=>`Level ${v}`, v=>v);
+}
+
+function fillSelect(id, values, labelFn, valFn) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = valFn(v);
+    o.textContent = labelFn(v);
+    sel.appendChild(o);
+  });
+}
+
+function renderExplorer() {
+  const fType   = document.getElementById('filterType').value;
+  const fDiv    = document.getElementById('filterDivision').value;
+  const fSeason = document.getElementById('filterSeason').value;
+  const fBudget = document.getElementById('filterBudget').value;
+
+  const filtered = DESTS.filter(d =>
+    (!fType   || d.type        === fType)  &&
+    (!fDiv    || d.division    === fDiv)   &&
+    (!fSeason || d.best_season === fSeason)&&
+    (!fBudget || String(d.budget_level) === String(fBudget))
+  );
+
+  const grid = document.getElementById('explorerGrid');
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<p class="no-data" style="grid-column:1/-1">No destinations match the selected filters.</p>';
+    return;
+  }
+
+  filtered.forEach(d => {
+    grid.innerHTML += `
+      <div class="exp-card">
+        <h4>${d.name}</h4>
+        <div class="badge-row">
+          <span class="badge badge-type">${d.type}</span>
+          <span class="badge badge-div">${d.division}</span>
+          <span class="badge badge-season">🌤 ${d.best_season}</span>
+          <span class="badge badge-budget">💰 L${d.budget_level}</span>
+        </div>
+        <div class="rating-row">
+          <span class="rating-star">${d.avg_rating} ★</span>
+          <span style="font-size:.75rem;color:var(--muted)">${d.dest_id}</span>
+        </div>
+        <p>${d.description}</p>
+      </div>`;
+  });
+}
+
+// ─────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
